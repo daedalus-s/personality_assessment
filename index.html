@@ -27,6 +27,14 @@
             width: 100%;
             padding: 5px;
         }
+        #personality-traits {
+            margin-top: 20px;
+        }
+        .trait-bar {
+            height: 20px;
+            background-color: #4CAF50;
+            margin-bottom: 5px;
+        }
     </style>
 </head>
 <body>
@@ -34,11 +42,13 @@
     <div id="chat-container"></div>
     <input type="text" id="user-input" placeholder="Type your message here...">
     <button id="send-button">Send</button>
+    <div id="personality-traits"></div>
 
     <script>
         const chatContainer = document.getElementById('chat-container');
         const userInput = document.getElementById('user-input');
         const sendButton = document.getElementById('send-button');
+        const personalityTraits = document.getElementById('personality-traits');
 
         sendButton.addEventListener('click', sendMessage);
         userInput.addEventListener('keypress', function(e) {
@@ -46,6 +56,24 @@
                 sendMessage();
             }
         });
+
+        async function sendMessage() {
+            const message = userInput.value.trim();
+            if (message) {
+                appendMessage('You', message);
+                userInput.value = '';
+                const response = await sendMessageToBackend(message);
+                appendMessage('AI', 'Thank you for your message. Here\'s an update on your personality assessment:');
+                updatePersonalityTraits(response.personality_traits);
+            }
+        }
+
+        function appendMessage(sender, text) {
+            const messageElement = document.createElement('p');
+            messageElement.innerHTML = `<strong>${sender}:</strong> ${text}`;
+            chatContainer.appendChild(messageElement);
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
 
         async function sendMessageToBackend(message) {
             const response = await fetch('https://0pnd965v02.execute-api.us-east-1.amazonaws.com/prod/chat', {
@@ -61,27 +89,16 @@
             return await response.json();
         }
 
-        async function sendMessage() {
-            const message = userInput.value.trim();
-            if (message) {
-                appendMessage('You', message);
-                userInput.value = '';
-                const response = await sendMessageToBackend(message);
-                appendMessage('AI', `Thank you for your message. Based on your input, here are your current personality trait scores: ${JSON.stringify(response.personality_traits)}`);
+        function updatePersonalityTraits(traits) {
+            personalityTraits.innerHTML = '<h2>Personality Traits</h2>';
+            for (const [trait, score] of Object.entries(traits)) {
+                const traitElement = document.createElement('div');
+                traitElement.innerHTML = `
+                    <p>${trait.charAt(0).toUpperCase() + trait.slice(1)}: ${(score * 100).toFixed(1)}%</p>
+                    <div class="trait-bar" style="width: ${score * 100}%;"></div>
+                `;
+                personalityTraits.appendChild(traitElement);
             }
-        }
-
-        function appendMessage(sender, text) {
-            const messageElement = document.createElement('p');
-            messageElement.innerHTML = `<strong>${sender}:</strong> ${text}`;
-            chatContainer.appendChild(messageElement);
-            chatContainer.scrollTop = chatContainer.scrollHeight;
-        }
-
-        function simulateResponse() {
-            setTimeout(() => {
-                appendMessage('AI', "Thank you for your message. I'm processing it to understand your personality better.");
-            }, 1000);
         }
     </script>
 </body>
